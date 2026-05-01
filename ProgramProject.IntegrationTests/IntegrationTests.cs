@@ -109,7 +109,7 @@ public class IntegrationTests(AppHostFixture fixture) : IClassFixture<AppHostFix
     }
 
     /// <summary>
-    /// Сквозной тест, проверяющий полный путь данных GenerationService → SQS → FileService → Minio.
+    /// Сквозной тест, проверяющий полный путь данных через GenerationService,SQS, FileService и Mini
     /// </summary>
     [Fact]
     public async Task Minio_FileSaved()
@@ -125,8 +125,7 @@ public class IntegrationTests(AppHostFixture fixture) : IClassFixture<AppHostFix
     }
 
     /// <summary>
-    /// Расширенный сквозной тест, проверяет не только наличие файла в Minio,
-    /// но и соответствие его содержимого данным, возвращённым API.
+    /// Расширенный сквозной тест, проверяет соответствие его содержимого данным, возвращённым API
     /// </summary>
     [Fact]
     public async Task Minio_FileContentMatchesApiResponse()

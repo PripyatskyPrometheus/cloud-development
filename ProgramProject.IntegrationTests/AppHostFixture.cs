@@ -75,7 +75,7 @@ public class AppHostFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Ожидает появления файла в Minio по указанному префиксу
+    /// Ожидаем появления файла в Minio по указанному префиксу
     /// </summary>
     public async Task<List<Amazon.S3.Model.S3Object>> WaitForS3ObjectAsync(string prefix, int maxAttempts = 15)
     {
