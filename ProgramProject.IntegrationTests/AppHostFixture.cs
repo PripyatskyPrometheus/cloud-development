@@ -30,15 +30,12 @@ public class AppHostFixture : IAsyncLifetime
         App = await appHost.BuildAsync();
         await App.StartAsync();
 
-        // Ждём готовности компонентов
         await App.ResourceNotifications.WaitForResourceHealthyAsync("cache").WaitAsync(TimeSpan.FromSeconds(60));
         await App.ResourceNotifications.WaitForResourceHealthyAsync("generator-1").WaitAsync(TimeSpan.FromSeconds(60));
         await App.ResourceNotifications.WaitForResourceHealthyAsync("gateway").WaitAsync(TimeSpan.FromSeconds(60));
 
-        // Небольшая задержка для Minio
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        // Получаем реальные URL от Aspire
         using var minioClient = App.CreateHttpClient("minio", "api");
         var minioUrl = minioClient.BaseAddress!.ToString().TrimEnd('/');
 
@@ -54,7 +51,6 @@ public class AppHostFixture : IAsyncLifetime
                 AuthenticationRegion = "us-east-1"
             });
 
-        // Убедимся, что бакет projects существует
         try
         {
             try

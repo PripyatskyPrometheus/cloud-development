@@ -36,10 +36,8 @@ public class SqsBackgroundService : BackgroundService
     {
         _logger.LogInformation("SQS Background Service запущен");
 
-        // Создаём очередь, если её нет
         await EnsureQueueExistsAsync(stoppingToken);
 
-        // Создаём бакет в Minio, если его нет
         await EnsureBucketExistsAsync(stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -60,15 +58,12 @@ public class SqsBackgroundService : BackgroundService
                 {
                     _logger.LogInformation("Получено сообщение: {MessageBody}", message.Body);
 
-                    // Десериализуем проект
                     var project = JsonSerializer.Deserialize<ProgramProjectModel>(message.Body);
 
                     if (project != null)
                     {
-                        // Сохраняем в Minio
                         await SaveToMinioAsync(project, stoppingToken);
 
-                        // Удаляем сообщение из очереди
                         await _sqsClient.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, stoppingToken);
                         _logger.LogInformation("Проект {ProjectId} сохранён и сообщение удалено", project.Id);
                     }
