@@ -7,7 +7,7 @@ using Xunit;
 namespace ProgramProject.IntegrationTests;
 
 /// <summary>
-/// Интеграционные тесты, проверяющие корректную совместную работу всех сервисов бекенда
+/// Интеграционные тесты, проверяющие корректную работу сервисов
 /// </summary>
 public class IntegrationTests(AppHostFixture fixture) : IClassFixture<AppHostFixture>
 {
