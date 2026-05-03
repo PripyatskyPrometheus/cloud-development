@@ -8,7 +8,7 @@ using ProgramProject.GenerationService.Models;
 namespace ProgramProject.FileService.Services;
 
 /// <summary>
-/// Фоновый сервис для чтения сообщений из SQS и сохранения в Minio
+/// Сервис для чтения сообщений из SQS и сохранения в Minio
 /// </summary>
 public class SqsBackgroundService : BackgroundService
 {
