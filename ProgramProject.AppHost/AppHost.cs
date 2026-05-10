@@ -9,7 +9,8 @@ var minio = builder.AddContainer("minio", "minio/minio")
     .WithHttpEndpoint(port: 9001, targetPort: 9001, name: "console")
     .WithVolume("minio-data", "/data");
 
-// Эмулятор Amazon SQS (добавлен для корректной отработки тестов)
+// Эмулятор Amazon SQS, добавлен для корректной отработки тестов
+// (до этого были постоянные ошибки тестов из-за рандомизации портов)
 var sqs = builder.AddContainer("elasticmq", "softwaremill/elasticmq")
     .WithHttpEndpoint(port: 9324, targetPort: 9324, name: "http");
 
