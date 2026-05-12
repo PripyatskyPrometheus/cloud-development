@@ -19,7 +19,6 @@ public class ProjectSaver(
 
     public async Task SaveAsync(string jsonContent, CancellationToken cancellationToken)
     {
-        // Парсим JSON, чтобы получить Id для имени файла
         using var document = JsonDocument.Parse(jsonContent);
         var id = document.RootElement.GetProperty("Id").GetInt32();
         var fileName = $"project_{id}.json";
