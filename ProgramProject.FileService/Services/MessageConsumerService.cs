@@ -24,7 +24,6 @@ public class MessageConsumerService(
         _logger.LogInformation("Message Consumer Service запущен");
         _logger.LogInformation("QueueUrl: {QueueUrl}", _queueUrl);
 
-        // Добавь проверку существования очереди
         try
         {
             var queueAttr = await _sqsClient.GetQueueAttributesAsync(_queueUrl, new List<string> { "All" }, stoppingToken);
