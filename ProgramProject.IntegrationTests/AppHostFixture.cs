@@ -12,12 +12,11 @@ public class AppHostFixture : IAsyncLifetime
 {
     public DistributedApplication App { get; private set; } = null!;
     public IAmazonS3 S3Client { get; private set; } = null!;
-    public string SqsUrl { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
         var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.ProgramProject_AppHost>();
+            .CreateAsync<Projects.ProgramProject_AppHost>(args: ["DcpPublisher:RandomizePorts=false"]);
 
         appHost.Services.ConfigureHttpClientDefaults(http =>
             http.AddStandardResilienceHandler(options =>
@@ -36,11 +35,8 @@ public class AppHostFixture : IAsyncLifetime
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        using var minioClient = App.CreateHttpClient("minio", "api");
+        using var minioClient = App.CreateHttpClient("minio", "http");
         var minioUrl = minioClient.BaseAddress!.ToString().TrimEnd('/');
-
-        using var sqsClient = App.CreateHttpClient("elasticmq", "http");
-        SqsUrl = sqsClient.BaseAddress!.ToString().TrimEnd('/');
 
         S3Client = new AmazonS3Client(
             new BasicAWSCredentials("minioadmin", "minioadmin"),
@@ -50,24 +46,6 @@ public class AppHostFixture : IAsyncLifetime
                 ForcePathStyle = true,
                 AuthenticationRegion = "us-east-1"
             });
-
-        try
-        {
-            try
-            {
-                await S3Client.GetBucketLocationAsync("projects");
-                Console.WriteLine("Бакет projects существует");
-            }
-            catch (AmazonS3Exception ex) when (ex.ErrorCode == "NoSuchBucket")
-            {
-                await S3Client.PutBucketAsync("projects");
-                Console.WriteLine("Бакет projects создан");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Ошибка при проверке/создании бакета: {ex.Message}");
-        }
     }
 
     /// <summary>

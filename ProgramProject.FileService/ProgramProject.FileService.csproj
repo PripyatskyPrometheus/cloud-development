@@ -10,11 +10,9 @@
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.31" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.2.23" />
     <PackageReference Include="Minio" Version="7.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProgramProject.GenerationService\ProgramProject.GenerationService.csproj" />
     <ProjectReference Include="..\ProgramProject.ServiceDefaults\ProgramProject.ServiceDefaults.csproj" />
   </ItemGroup>
 

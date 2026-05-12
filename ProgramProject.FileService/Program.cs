@@ -10,18 +10,21 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 builder.AddServiceDefaults();
 
-var sqsServiceUrl = builder.Configuration["SQS:ServiceURL"] ?? "http://localhost:9324";
+var sqsServiceUrl = builder.Configuration["SQS:QueueUrl"] ?? builder.Configuration["SQS:ServiceURL"] 
+    ?? "http://localhost:9324";
 var sqsConfig = new AmazonSQSConfig
 {
     ServiceURL = sqsServiceUrl,
     UseHttp = true,
-    AuthenticationRegion = "us-east-1"
+    AuthenticationRegion = "eu-central-1"
 };
 builder.Services.AddSingleton<IAmazonSQS>(sp => new AmazonSQSClient(new AnonymousAWSCredentials(), sqsConfig));
 
 var minioEndpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000";
+Console.WriteLine($"Minio endpoint from config: '{minioEndpoint}'");
 var minioAccessKey = builder.Configuration["Minio:AccessKey"] ?? "minioadmin";
 var minioSecretKey = builder.Configuration["Minio:SecretKey"] ?? "minioadmin";
+
 
 builder.Services.AddSingleton<Minio.IMinioClient>(sp =>
 {
@@ -32,23 +35,12 @@ builder.Services.AddSingleton<Minio.IMinioClient>(sp =>
         .Build();
 });
 
-builder.Services.AddHostedService<SqsBackgroundService>();
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddHostedService<InfrastructureInitializer>();
+builder.Services.AddSingleton<IProjectSaver, ProjectSaver>();
+builder.Services.AddHostedService<MessageConsumerService>();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseAuthorization();
-app.MapControllers();
 
 app.Run();

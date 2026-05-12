@@ -11,12 +11,13 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 builder.AddServiceDefaults();
 builder.AddRedisDistributedCache("cache");
 
-var sqsServiceUrl = builder.Configuration["SQS:ServiceURL"] ?? "http://localhost:9324";
+var sqsServiceUrl = builder.Configuration["SQS:QueueUrl"] ?? builder.Configuration["SQS:ServiceURL"] 
+    ?? "http://localhost:9324";
 var sqsConfig = new AmazonSQSConfig
 {
     ServiceURL = sqsServiceUrl,
     UseHttp = true,
-    AuthenticationRegion = "us-east-1"
+    AuthenticationRegion = "eu-central-1"
 };
 builder.Services.AddSingleton<IAmazonSQS>(sp => new AmazonSQSClient(new AnonymousAWSCredentials(), sqsConfig));
 

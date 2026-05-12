@@ -1,0 +1,40 @@
+﻿using Minio;
+using Minio.DataModel.Args;
+using System.Text;
+using System.Text.Json;
+
+namespace ProgramProject.FileService.Services;
+
+/// <summary>
+/// Сохранение проектов в Minio
+/// </summary>
+public class ProjectSaver(
+    IMinioClient minioClient,
+    IConfiguration configuration,
+    ILogger<ProjectSaver> logger) : IProjectSaver
+{
+    private readonly IMinioClient _minioClient = minioClient;
+    private readonly ILogger<ProjectSaver> _logger = logger;
+    private readonly string _bucketName = configuration["Minio:BucketName"] ?? "projects";
+
+    public async Task SaveAsync(string jsonContent, CancellationToken cancellationToken)
+    {
+        // Парсим JSON, чтобы получить Id для имени файла
+        using var document = JsonDocument.Parse(jsonContent);
+        var id = document.RootElement.GetProperty("Id").GetInt32();
+        var fileName = $"project_{id}.json";
+
+        var bytes = Encoding.UTF8.GetBytes(jsonContent);
+        using var memoryStream = new MemoryStream(bytes);
+
+        var putObjectArgs = new PutObjectArgs()
+            .WithBucket(_bucketName)
+            .WithObject(fileName)
+            .WithStreamData(memoryStream)
+            .WithObjectSize(memoryStream.Length)
+            .WithContentType("application/json");
+
+        await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
+        _logger.LogInformation("Проект {ProjectId} сохранён в Minio: {FileName}", id, fileName);
+    }
+}

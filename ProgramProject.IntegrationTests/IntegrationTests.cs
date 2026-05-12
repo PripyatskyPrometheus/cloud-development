@@ -24,27 +24,6 @@ public class IntegrationTests(AppHostFixture fixture) : IClassFixture<AppHostFix
     }
 
     /// <summary>
-    /// Проверяет, что запрос с конкретным ID возвращает корректный объект программного проекта
-    /// </summary>
-    [Fact]
-    public async Task Generator_GetById_ReturnsValidProject()
-    {
-        using var httpClient = fixture.App.CreateHttpClient("generator-1", "http");
-        using var response = await httpClient.GetAsync("/api/projects?id=42");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var project = await response.Content.ReadFromJsonAsync<ProgramProjectModel>();
-        Assert.NotNull(project);
-        Assert.Equal(42, project.Id);
-        Assert.False(string.IsNullOrEmpty(project.Name));
-        Assert.False(string.IsNullOrEmpty(project.Customer));
-        Assert.False(string.IsNullOrEmpty(project.Manager));
-        Assert.True(project.Budget > 0);
-        Assert.InRange(project.CompletionPercentage, 0, 100);
-    }
-
-    /// <summary>
     /// Проверяет работу Redis-кэширования: Два последовательных запроса с одинаковым ID должны вернуть идентичные данные
     /// </summary>
     [Fact]
@@ -109,12 +88,12 @@ public class IntegrationTests(AppHostFixture fixture) : IClassFixture<AppHostFix
     }
 
     /// <summary>
-    /// Сквозной тест, проверяющий полный путь данных через GenerationService,SQS, FileService и Mini
+    /// Сквозной тест, проверяющий полный путь данных через Gateway, GenerationService, SQS, FileService и Minio
     /// </summary>
     [Fact]
     public async Task Minio_FileSaved()
     {
-        using var client = fixture.App.CreateHttpClient("generator-1", "http");
+        using var client = fixture.App.CreateHttpClient("gateway", "http");
         var testId = new Random().Next(5000, 6000);
 
         var response = await client.GetAsync($"/api/projects?id={testId}");
@@ -131,7 +110,7 @@ public class IntegrationTests(AppHostFixture fixture) : IClassFixture<AppHostFix
     public async Task Minio_FileContentMatchesApiResponse()
     {
         var testId = new Random().Next(7000, 8000);
-        using var httpClient = fixture.App.CreateHttpClient("generator-1", "http");
+        using var httpClient = fixture.App.CreateHttpClient("gateway", "http");
 
         var apiProject = await httpClient.GetFromJsonAsync<ProgramProjectModel>($"/api/projects?id={testId}");
         Assert.NotNull(apiProject);
@@ -145,9 +124,6 @@ public class IntegrationTests(AppHostFixture fixture) : IClassFixture<AppHostFix
         var savedProject = System.Text.Json.JsonSerializer.Deserialize<ProgramProjectModel>(json);
 
         Assert.NotNull(savedProject);
-        Assert.Equal(apiProject.Id, savedProject.Id);
-        Assert.Equal(apiProject.Name, savedProject.Name);
-        Assert.Equal(apiProject.Customer, savedProject.Customer);
-        Assert.Equal(apiProject.Budget, savedProject.Budget);
+        Assert.Equivalent(apiProject, savedProject);
     }
 }

@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for ProgramProject'
+
+Parameters:
+  QueueName:
+    Type: String
+    Description: Name for the SQS queue
+    Default: 'projects'
+
+Resources:
+  ProjectsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: { "Ref": "QueueName" }
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 345600
+      DelaySeconds: 0
+      ReceiveMessageWaitTimeSeconds: 0
+
+Outputs:
+  SQSQueueUrl:
+    Description: URL of the SQS queue
+    Value: { "Ref": "ProjectsQueue" }
