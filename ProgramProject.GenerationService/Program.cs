@@ -1,5 +1,5 @@
-﻿using Amazon.Runtime;
-using Amazon.SQS;
+﻿using Amazon.SQS;
+using LocalStack.Client.Extensions;
 using ProgramProject.GenerationService.Generator;
 using ProgramProject.GenerationService.Services;
 using ProgramProject.ServiceDefaults;
@@ -11,15 +11,8 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 builder.AddServiceDefaults();
 builder.AddRedisDistributedCache("cache");
 
-var sqsServiceUrl = builder.Configuration["SQS:QueueUrl"] ?? builder.Configuration["SQS:ServiceURL"] 
-    ?? "http://localhost:9324";
-var sqsConfig = new AmazonSQSConfig
-{
-    ServiceURL = sqsServiceUrl,
-    UseHttp = true,
-    AuthenticationRegion = "eu-central-1"
-};
-builder.Services.AddSingleton<IAmazonSQS>(sp => new AmazonSQSClient(new AnonymousAWSCredentials(), sqsConfig));
+builder.Services.AddLocalStack(builder.Configuration);
+builder.Services.AddAwsService<IAmazonSQS>();
 
 builder.Services.AddSingleton<IProgramProjectFaker, ProgramProjectFaker>();
 builder.Services.AddScoped<IProjectService, ProjectService>();

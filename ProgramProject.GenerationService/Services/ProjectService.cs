@@ -17,7 +17,8 @@ public class ProjectService : IProjectService
     private readonly ILogger<ProjectService> _logger;
     private readonly DistributedCacheEntryOptions _cacheOptions;
     private readonly IAmazonSQS _sqsClient;
-    private readonly string _queueUrl;
+    private readonly string _queueName;
+    private string? _queueUrl;
 
     public ProjectService(
         IDistributedCache cache,
@@ -35,7 +36,7 @@ public class ProjectService : IProjectService
         _cacheOptions = new DistributedCacheEntryOptions()
             .SetAbsoluteExpiration(TimeSpan.FromMinutes(cacheMinutes));
 
-        _queueUrl = configuration["SQS:QueueUrl"] ?? "http://localhost:9324/queue/projects";
+        _queueName = configuration["AWS:Resources:SQSQueueName"] ?? "projects";
     }
 
     public async Task<ProgramProjectModel> GetProjectByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -73,7 +74,7 @@ public class ProjectService : IProjectService
 
             _logger.LogInformation("Проект с ID {ProjectId} сгенерирован и сохранён в кэш", id);
 
-            //Отправляем проект в SQS 
+            // Отправляем проект в SQS 
             await SendToSqsAsync(newProject, cancellationToken);
 
             return newProject;
@@ -86,16 +87,31 @@ public class ProjectService : IProjectService
     }
 
     /// <summary>
+    /// Получение URL очереди по имени
+    /// </summary>
+    private async Task<string> GetQueueUrlAsync(CancellationToken cancellationToken)
+    {
+        if (_queueUrl == null)
+        {
+            var response = await _sqsClient.GetQueueUrlAsync(_queueName, cancellationToken);
+            _queueUrl = response.QueueUrl;
+            _logger.LogInformation("URL очереди получен: {QueueUrl}", _queueUrl);
+        }
+        return _queueUrl;
+    }
+
+    /// <summary>
     /// Отправка проекта в очередь SQS для последующего сохранения в Minio
     /// </summary>
     private async Task SendToSqsAsync(ProgramProjectModel project, CancellationToken cancellationToken)
     {
         try
         {
+            var queueUrl = await GetQueueUrlAsync(cancellationToken);
             var json = JsonSerializer.Serialize(project);
             var sendRequest = new SendMessageRequest
             {
-                QueueUrl = _queueUrl,
+                QueueUrl = queueUrl,
                 MessageBody = json
             };
 

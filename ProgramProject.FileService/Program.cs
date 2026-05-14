@@ -1,8 +1,8 @@
-﻿using Amazon.Runtime;
-using Amazon.SQS;
+﻿using Amazon.SQS;
 using Minio;
 using ProgramProject.FileService.Services;
 using ProgramProject.ServiceDefaults;
+using LocalStack.Client.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,21 +10,12 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 builder.AddServiceDefaults();
 
-var sqsServiceUrl = builder.Configuration["SQS:QueueUrl"] ?? builder.Configuration["SQS:ServiceURL"] 
-    ?? "http://localhost:9324";
-var sqsConfig = new AmazonSQSConfig
-{
-    ServiceURL = sqsServiceUrl,
-    UseHttp = true,
-    AuthenticationRegion = "eu-central-1"
-};
-builder.Services.AddSingleton<IAmazonSQS>(sp => new AmazonSQSClient(new AnonymousAWSCredentials(), sqsConfig));
+builder.Services.AddLocalStack(builder.Configuration);
+builder.Services.AddAwsService<IAmazonSQS>();
 
 var minioEndpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000";
-Console.WriteLine($"Minio endpoint from config: '{minioEndpoint}'");
 var minioAccessKey = builder.Configuration["Minio:AccessKey"] ?? "minioadmin";
 var minioSecretKey = builder.Configuration["Minio:SecretKey"] ?? "minioadmin";
-
 
 builder.Services.AddSingleton<Minio.IMinioClient>(sp =>
 {

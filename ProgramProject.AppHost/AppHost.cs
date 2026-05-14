@@ -36,7 +36,7 @@ for (var i = 1; i <= 5; i++)
         .WaitFor(sqsResources)
         .WithEndpoint("http", endpoint => endpoint.Port = 6200 + i)
         .WithEndpoint("https", endpoint => endpoint.Port = 7200 + i)
-        .WithEnvironment("SQS__QueueUrl", sqsResources.GetOutput("SQSQueueUrl"));
+        .WithEnvironment("AWS__Resources__SQSQueueName", sqsResources.GetOutput("SQSQueueName"));
 
     generators.Add(generator);
 }
@@ -53,7 +53,7 @@ foreach (var generator in generators)
 // Файловый сервис
 builder.AddProject<Projects.ProgramProject_FileService>("programproject-fileservice")
     .WithExternalHttpEndpoints()
-    .WithEnvironment("SQS__QueueUrl", sqsResources.GetOutput("SQSQueueUrl"))
+    .WithEnvironment("AWS__Resources__SQSQueueName", sqsResources.GetOutput("SQSQueueName"))
     .WithEnvironment("Minio__Endpoint", minio.GetEndpoint("http"))
     .WithEnvironment("Minio__AccessKey", "minioadmin")
     .WithEnvironment("Minio__SecretKey", "minioadmin")

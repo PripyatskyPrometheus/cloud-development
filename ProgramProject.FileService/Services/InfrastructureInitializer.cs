@@ -14,11 +14,10 @@ public class InfrastructureInitializer(
     IConfiguration configuration,
     ILogger<InfrastructureInitializer> logger) : IHostedService
 {
-    private readonly IAmazonSQS _sqsClient = sqsClient;
-    private readonly IMinioClient _minioClient = minioClient;
-    private readonly ILogger<InfrastructureInitializer> _logger = logger;
     private readonly string _bucketName = configuration["Minio:BucketName"] ?? "projects";
-    private readonly string _queueName = "projects";
+    private readonly string _queueName = configuration["AWS:Resources:SQSQueueName"] ?? "projects";
+
+    public static string? QueueUrl { get; private set; }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -37,12 +36,13 @@ public class InfrastructureInitializer(
                 QueueName = _queueName,
                 Attributes = new Dictionary<string, string> { { "VisibilityTimeout", "30" } }
             };
-            var response = await _sqsClient.CreateQueueAsync(createQueueRequest, cancellationToken);
-            _logger.LogInformation("Очередь создана или уже существует: {QueueUrl}", response.QueueUrl);
+            var response = await sqsClient.CreateQueueAsync(createQueueRequest, cancellationToken);
+            QueueUrl = response.QueueUrl;
+            logger.LogInformation("Очередь создана или уже существует: {QueueUrl}", QueueUrl);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при создании очереди");
+            logger.LogError(ex, "Ошибка при создании очереди");
         }
     }
 
@@ -50,23 +50,23 @@ public class InfrastructureInitializer(
     {
         try
         {
-            var bucketExists = await _minioClient.BucketExistsAsync(
+            var bucketExists = await minioClient.BucketExistsAsync(
                 new BucketExistsArgs().WithBucket(_bucketName), cancellationToken);
 
             if (!bucketExists)
             {
-                await _minioClient.MakeBucketAsync(
+                await minioClient.MakeBucketAsync(
                     new MakeBucketArgs().WithBucket(_bucketName), cancellationToken);
-                _logger.LogInformation("Бакет {BucketName} создан", _bucketName);
+                logger.LogInformation("Бакет {BucketName} создан", _bucketName);
             }
             else
             {
-                _logger.LogInformation("Бакет {BucketName} уже существует", _bucketName);
+                logger.LogInformation("Бакет {BucketName} уже существует", _bucketName);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при создании бакета");
+            logger.LogError(ex, "Ошибка при создании бакета");
         }
     }
 }

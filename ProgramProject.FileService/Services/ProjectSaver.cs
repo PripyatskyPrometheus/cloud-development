@@ -13,8 +13,6 @@ public class ProjectSaver(
     IConfiguration configuration,
     ILogger<ProjectSaver> logger) : IProjectSaver
 {
-    private readonly IMinioClient _minioClient = minioClient;
-    private readonly ILogger<ProjectSaver> _logger = logger;
     private readonly string _bucketName = configuration["Minio:BucketName"] ?? "projects";
 
     public async Task SaveAsync(string jsonContent, CancellationToken cancellationToken)
@@ -33,7 +31,7 @@ public class ProjectSaver(
             .WithObjectSize(memoryStream.Length)
             .WithContentType("application/json");
 
-        await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
-        _logger.LogInformation("Проект {ProjectId} сохранён в Minio: {FileName}", id, fileName);
+        await minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
+        logger.LogInformation("Проект {ProjectId} сохранён в Minio: {FileName}", id, fileName);
     }
 }

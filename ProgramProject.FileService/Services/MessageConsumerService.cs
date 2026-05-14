@@ -13,25 +13,33 @@ public class MessageConsumerService(
     IConfiguration configuration,
     ILogger<MessageConsumerService> logger) : BackgroundService
 {
-    private readonly IAmazonSQS _sqsClient = sqsClient;
-    private readonly IProjectSaver _projectSaver = projectSaver;
-    private readonly ILogger<MessageConsumerService> _logger = logger;
-    private readonly string _queueUrl = configuration["SQS:QueueUrl"] ?? configuration["SQS__QueueUrl"] 
-        ?? "http://localhost:9324/queue/projects";
+    private readonly string _queueName = configuration["AWS:Resources:SQSQueueName"] ?? "projects";
+    private string? _queueUrl;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Message Consumer Service запущен");
-        _logger.LogInformation("QueueUrl: {QueueUrl}", _queueUrl);
+        logger.LogInformation("Message Consumer Service запущен");
 
         try
         {
-            var queueAttr = await _sqsClient.GetQueueAttributesAsync(_queueUrl, new List<string> { "All" }, stoppingToken);
-            _logger.LogInformation("Очередь существует, атрибуты получены");
+            var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(_queueName, stoppingToken);
+            _queueUrl = getQueueUrlResponse.QueueUrl;
+            logger.LogInformation("QueueUrl получен: {QueueUrl}", _queueUrl);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Не удалось получить атрибуты очереди");
+            logger.LogError(ex, "Не удалось получить URL очереди по имени {QueueName}", _queueName);
+            return;
+        }
+
+        try
+        {
+            var queueAttr = await sqsClient.GetQueueAttributesAsync(_queueUrl, new List<string> { "All" }, stoppingToken);
+            logger.LogInformation("Очередь существует, атрибуты получены");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Не удалось получить атрибуты очереди");
         }
 
         while (!stoppingToken.IsCancellationRequested)
@@ -46,7 +54,7 @@ public class MessageConsumerService(
                     VisibilityTimeout = 30
                 };
 
-                var response = await _sqsClient.ReceiveMessageAsync(request, stoppingToken);
+                var response = await sqsClient.ReceiveMessageAsync(request, stoppingToken);
 
                 if (response?.Messages == null || !response.Messages.Any())
                 {
@@ -58,16 +66,16 @@ public class MessageConsumerService(
                     using var document = JsonDocument.Parse(message.Body);
                     var root = document.RootElement;
                     var id = root.GetProperty("Id").GetInt32();
-                    _logger.LogInformation("Получен проект с ID {ProjectId}", id);
+                    logger.LogInformation("Получен проект с ID {ProjectId}", id);
 
-                    await _projectSaver.SaveAsync(message.Body, stoppingToken);
-                    await _sqsClient.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, stoppingToken);
-                    _logger.LogInformation("Проект {ProjectId} сохранён и сообщение удалено", id);
+                    await projectSaver.SaveAsync(message.Body, stoppingToken);
+                    await sqsClient.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, stoppingToken);
+                    logger.LogInformation("Проект {ProjectId} сохранён и сообщение удалено", id);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при обработке сообщения из SQS");
+                logger.LogError(ex, "Ошибка при обработке сообщения из SQS");
                 await Task.Delay(5000, stoppingToken);
             }
         }
